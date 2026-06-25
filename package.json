@@ -8,6 +8,7 @@
     "test": "node --test \"test/**/*.test.mjs\"",
     "serve": "node ./tools/serve.mjs",
     "build:wasm": "./wasm/build_node.sh",
+    "build:site": "node ./tools/build-site.mjs",
     "gen:adapters": "node ./tools/gen-adapters.mjs",
     "run:node": "node ./tools/run-node.mjs"
   },
@@ -17,6 +18,7 @@
     "usb": "^3.0.0"
   },
   "devDependencies": {
+    "esbuild": "^0.28.1",
     "yaml": "^2.9.0"
   }
 }

@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Meshtastic Web Node — SX1262 over WebUSB (CH341)</title>
+    <title>meshtasticd in the browser — full node over WebUSB</title>
     <style>
       :root { color-scheme: light dark; }
-      body { font: 14px/1.5 system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+      body { font: 14px/1.5 system-ui, sans-serif; max-width: 820px; margin: 2rem auto; padding: 0 1rem; }
       h1 { font-size: 1.25rem; }
       .sub { opacity: 0.7; margin-top: -0.5rem; }
       button { font: inherit; padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid #8888; cursor: pointer; }
@@ -14,30 +14,52 @@
       #status.ok { background: #2ecc7133; }
       #status.warn { background: #f39c1233; }
       #status.err { background: #e74c3c33; }
-      #log { margin-top: 1rem; height: 320px; overflow: auto; background: #0001; border-radius: 8px;
-             padding: 0.6rem 0.8rem; font: 12px/1.45 ui-monospace, Menlo, monospace; white-space: pre-wrap; }
+      #log { margin-top: 1rem; height: 420px; overflow: auto; background: #0001; border-radius: 8px;
+             padding: 0.6rem 0.8rem; font: 12px/1.4 ui-monospace, Menlo, monospace; white-space: pre-wrap; }
       .note { font-size: 12px; opacity: 0.8; margin-top: 1rem; }
     </style>
   </head>
   <body>
-    <h1>SX1262 liveness over WebUSB → CH341</h1>
-    <p class="sub">Checkpoint A (hardware half): proves the protocol + WebUSB reach a real LoRa radio, no WASM yet.</p>
+    <h1>meshtasticd — full node in WebAssembly, radio over WebUSB</h1>
+    <p class="sub">Boots the real firmware <code>setup()</code>/<code>loop()</code> in the tab, driving a MeshToad SX1262 over WebUSB.</p>
+    <p class="sub" style="margin-top:0.25rem"><a href="./meshnode-api.html">SDK-driven version</a> · <a href="./probe.html">hardware probe</a> · <a href="https://github.com/meshtastic/meshtasticd-wasm-node">source</a></p>
 
     <div>
-      <button id="connect">Connect &amp; probe radio</button>
-      <button id="diagnose">Diagnose (sweep CS polarity)</button>
-      <button id="disconnect">Disconnect</button>
+      <button id="boot">Connect &amp; boot node</button>
+      <button id="stop">Stop loop</button>
+      <button id="apiConfig">API: request config</button>
+      <label style="margin-left:1rem">Adapter <select id="adapter"></select></label>
+      <label style="margin-left:1rem">Region
+        <select id="region" disabled>
+          <option value="UNSET">UNSET (TX off)</option>
+          <option value="US">US</option>
+          <option value="EU_868">EU_868</option>
+          <option value="EU_433">EU_433</option>
+          <option value="ANZ">ANZ</option>
+          <option value="CN">CN</option>
+          <option value="JP">JP</option>
+          <option value="KR">KR</option>
+          <option value="IN">IN</option>
+          <option value="RU">RU</option>
+          <option value="TW">TW</option>
+          <option value="TH">TH</option>
+          <option value="UA_868">UA_868</option>
+          <option value="NZ_865">NZ_865</option>
+          <option value="SG_923">SG_923</option>
+        </select>
+      </label>
     </div>
 
     <div id="status">idle</div>
     <div id="log"></div>
 
     <p class="note">
-      Requires Chromium (Chrome/Edge) over <code>http://localhost</code> or https. Plug in a CH341-based LoRa
-      adapter (Meshstick / MeshToad / Pine64 LoRa hat). On Linux the CH341 must not be claimed by a kernel
-      driver; on Windows it needs the WinUSB driver (Zadig). Default filter VID 0x1A86 / PID 0x5512.
+      Needs <strong>Chromium</strong> (Chrome/Edge) — WebUSB is Chromium-only. Plug in a CH341-based LoRa adapter
+      (Meshstick / MeshToad / Pine64 hat); on Linux it must not be claimed by a kernel driver, on Windows it needs
+      the WinUSB driver (Zadig). Nothing is sent to any server — the node runs entirely in this tab and the log is
+      the firmware's own stdout. Node identity, config and nodedb persist in IndexedDB across reloads.
     </p>
 
-    <script type="module" src="./probe.js"></script>
+    <script type="module" src="./meshnode.js"></script>
   </body>
 </html>

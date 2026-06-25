@@ -1,0 +1,118 @@
+name: Deploy site (GitHub Pages)
+
+# Builds the WebUSB wasm node and publishes it as a static site to GitHub Pages
+# (https://meshtastic.github.io/meshtasticd-wasm-node/). The compiled node is
+# built from a pinned meshtastic/firmware ref with `pio run -e native-wasm`
+# (emcc/Asyncify), the @meshtastic/core SDK + page modules are bundled with
+# esbuild, and the self-contained _site/ is deployed. Nothing is committed — the
+# wasm is rebuilt on every deploy so the site never carries stale binaries.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "src/**"
+      - "wasm/**"
+      - "tools/build-site.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+    inputs:
+      firmware_ref:
+        description: "meshtastic/firmware ref to build the wasm node from (default: the pinned FIRMWARE_REF)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment; don't cancel an in-progress one (a half-applied
+# Pages deploy is worse than waiting).
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  # Pinned firmware commit that carries [env:native-wasm]. Bump to update the
+  # deployed node (point at develop/a tag once native-wasm lands there).
+  # renovate: datasource=git-refs depName=firmware packageName=https://github.com/meshtastic/firmware
+  FIRMWARE_REF: f59464a61938b1f44824498e8bc56a6b859da4f4
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout site
+        uses: actions/checkout@v4
+
+      - name: Resolve firmware ref
+        id: fw
+        run: echo "ref=${{ github.event.inputs.firmware_ref || env.FIRMWARE_REF }}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout firmware (${{ steps.fw.outputs.ref }})
+        uses: actions/checkout@v4
+        with:
+          repository: meshtastic/firmware
+          ref: ${{ steps.fw.outputs.ref }}
+          submodules: recursive
+          path: firmware
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install site deps
+        run: npm ci
+
+      - name: Setup Python + PlatformIO
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - run: pip install -U platformio
+
+      # Cache PlatformIO's downloaded platform/framework/toolchain packages
+      # (platform-wasm, framework-portduino, ...). Keyed on the firmware ref so a
+      # ref bump re-resolves cleanly.
+      - name: Cache PlatformIO packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-wasm-${{ steps.fw.outputs.ref }}
+          restore-keys: pio-wasm-
+
+      - name: Setup Emscripten SDK
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+          actions-cache-folder: emsdk-cache
+
+      - name: Build wasm node (pio run -e native-wasm)
+        working-directory: firmware
+        run: platformio run -e native-wasm
+
+      - name: Assemble static site
+        env:
+          FW: ${{ github.workspace }}/firmware
+        run: node tools/build-site.mjs
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

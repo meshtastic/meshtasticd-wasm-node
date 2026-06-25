@@ -18,6 +18,10 @@ Emscripten **Asyncify** — one suspend per SPI transfer.
 > platform). This repo is the web app, JS WebUSB runtime, and dev harness that
 > consume it.
 
+**Live site:** **https://meshtastic.github.io/meshtasticd-wasm-node/** — open in
+Chromium, plug in a CH341 LoRa adapter, click **Connect & boot node**. No install,
+nothing leaves the tab. (The sections below are for building/hacking locally.)
+
 ## What works
 
 - Full node **boots in a tab** over WebUSB, inits a real SX1262, joins the mesh —
@@ -45,9 +49,9 @@ npm run build:wasm                     # -> web/dist/meshnode.{mjs,wasm} (runs f
 
 ```bash
 npm run serve                          # static server (WebUSB needs a secure context)
-# open http://localhost:8080/web/meshnode-api.html  — full node + @meshtastic/core UI
-#   or http://localhost:8080/web/meshnode.html       — raw node + region + API proof
-#   or http://localhost:8080/web/index.html          — hardware probe (no wasm)
+# open http://localhost:8080/web/                   — full node + region + API proof (index)
+#   or http://localhost:8080/web/meshnode-api.html   — full node + @meshtastic/core UI
+#   or http://localhost:8080/web/probe.html          — hardware probe (no wasm)
 ```
 
 Click **Connect & boot**, grant the CH341. The node boots, the SDK configures it,
@@ -64,9 +68,9 @@ meshtastic --host localhost --port 4403 --info
 ## Layout
 
 ```
+web/index.html + meshnode.js  Full node (the front page): boot, adapter + region picker, API proof
 web/meshnode-api.html/.js   Full node + official @meshtastic/core SDK (in-process transport)
-web/meshnode.html/.js       Raw node: boot, adapter + region picker, dependency-free API proof
-web/index.html + probe.js   Hardware probe — SX1262 liveness over WebUSB (no wasm)
+web/probe.html + probe.js   Hardware probe — SX1262 liveness over WebUSB (no wasm)
 web/transport-wasm.js       @meshtastic/core Transport over the wasm_api_* exports
 web/fs-setup.js             IDBFS (browser) / NODEFS (headless) persistence mount
 web/adapters.js             GENERATED CH341 adapter presets + applyAdapter (npm run gen:adapters)
@@ -74,6 +78,7 @@ src/protocol.js             CH341 framing (bit reversal, 0xA8 SPI stream, 0xAB G
 src/ch341.js                WebUSB CH341 transport
 wasm/build_node.sh          wrapper -> firmware's `pio run -e native-wasm`, stages web/dist/
 wasm/bridge.js              implements the C backend's webusb_* imports over src/ch341.js
+tools/build-site.mjs        bundle pages + SDK (esbuild) and stage the wasm -> _site/ (static site)
 tools/serve.mjs             static dev server (no-store)
 tools/run-node.mjs          headless node-usb runner (+ MESH_TCP serve, MESH_ADAPTER, MESH_REGION)
 tools/tcp-bridge.mjs        0x94c3 stream-framed TCP :4403 bridge for the Python CLI
@@ -107,6 +112,31 @@ CH341 config YAMLs (bin/config.d/lora-*.yaml) — regenerate with npm run gen:ad
 - **Linux:** the CH341 must not be bound to a kernel driver (WebUSB can't detach
   it); the SPI PID `0x5512` is usually free — add a udev rule for permissions.
 - **Windows:** install the WinUSB driver for the device via Zadig.
+
+## Hosting (static site)
+
+The repo deploys to **GitHub Pages** as a fully static site — no server, no
+backend. `tools/build-site.mjs` bundles the page modules and the
+`@meshtastic/core` SDK with esbuild (every `../src` / `../wasm` import inlined),
+stages the compiled `meshnode.{mjs,wasm}`, and writes a self-contained `_site/`
+that works from the project-pages subpath. Persistence (IndexedDB) and WebUSB
+both work on Pages — the node is single-threaded, so no COOP/COEP is needed.
+
+```bash
+npm run build:wasm        # stage web/dist/meshnode.{mjs,wasm} (or set FW=<firmware> for pio's .pio/build)
+npm run build:site        # -> _site/  (then serve _site/ with any static server)
+```
+
+CI does this on every push to `main` via
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml): it checks out a
+**pinned `meshtastic/firmware` ref**, builds the node with `pio run -e
+native-wasm` (emcc + the [platform-wasm](https://github.com/meshtastic/platform-wasm)
+platform), bundles, and deploys. The wasm is rebuilt every deploy, so the site
+never ships a stale binary; bump `FIRMWARE_REF` (or use the workflow's
+`firmware_ref` input) to move to a newer firmware.
+
+> First-time setup: in the repo's **Settings → Pages**, set *Source* to **GitHub
+> Actions**.
 
 ## License
 
