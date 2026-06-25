@@ -13,8 +13,10 @@ Emscripten **Asyncify** — one suspend per SPI transfer.
 
 > Companion to **[meshtastic/firmware](https://github.com/meshtastic/firmware)**:
 > the wasm build env + WebUSB backend live there under `src/platform/portduino/wasm/`
-> (`ARCH_PORTDUINO_WASM`, built by `bin/build-portduino-wasm.sh`). This repo is the
-> web app, JS WebUSB runtime, and dev harness that consume it.
+> (`ARCH_PORTDUINO_WASM`, built as a normal PlatformIO env — `pio run -e wasm` via
+> the [meshtastic/platform-wasm](https://github.com/meshtastic/platform-wasm)
+> platform). This repo is the web app, JS WebUSB runtime, and dev harness that
+> consume it.
 
 ## What works
 
@@ -36,8 +38,7 @@ Prereqs: **Chromium**, a CH341 LoRa adapter (e.g. a MeshToad, E22/SX1262; VID
 ```bash
 npm install
 ./tools/setup-emsdk.sh                 # one-time: fetch the Emscripten SDK (~1 GB, into ./emsdk)
-( cd ../firmware && pio run -e native-macos )   # one-time: populate firmware libdeps
-npm run build:wasm                     # -> web/dist/meshnode.{mjs,wasm}
+npm run build:wasm                     # -> web/dist/meshnode.{mjs,wasm} (runs firmware's pio run -e wasm)
 ```
 
 **Browser:**
@@ -71,7 +72,7 @@ web/fs-setup.js             IDBFS (browser) / NODEFS (headless) persistence moun
 web/adapters.js             GENERATED CH341 adapter presets + applyAdapter (npm run gen:adapters)
 src/protocol.js             CH341 framing (bit reversal, 0xA8 SPI stream, 0xAB GPIO). Unit-tested.
 src/ch341.js                WebUSB CH341 transport
-wasm/build_node.sh          wrapper -> firmware's bin/build-portduino-wasm.sh, stages web/dist/
+wasm/build_node.sh          wrapper -> firmware's `pio run -e wasm`, stages web/dist/
 wasm/bridge.js              implements the C backend's webusb_* imports over src/ch341.js
 tools/serve.mjs             static dev server (no-store)
 tools/run-node.mjs          headless node-usb runner (+ MESH_TCP serve, MESH_ADAPTER, MESH_REGION)
