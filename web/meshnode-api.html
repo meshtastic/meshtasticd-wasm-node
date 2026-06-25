@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>meshtasticd in the browser — controlled by @meshtastic/core</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body { font: 14px/1.5 system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+      h1 { font-size: 1.25rem; }
+      .sub { opacity: 0.7; margin-top: -0.5rem; }
+      button, input { font: inherit; padding: 0.45rem 0.8rem; border-radius: 8px; border: 1px solid #8888; }
+      button { cursor: pointer; }
+      #status { margin: 1rem 0; padding: 0.6rem 0.8rem; border-radius: 8px; background: #8881; }
+      #status.ok { background: #2ecc7133; } #status.warn { background: #f39c1233; } #status.err { background: #e74c3c33; }
+      .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+      .panel { background: #0001; border-radius: 8px; padding: 0.6rem 0.8rem; }
+      .panel h2 { font-size: 0.9rem; margin: 0 0 0.4rem; opacity: 0.8; }
+      #nodes { list-style: none; margin: 0; padding: 0; font: 12px/1.5 ui-monospace, Menlo, monospace; }
+      #log { height: 360px; overflow: auto; font: 12px/1.4 ui-monospace, Menlo, monospace; white-space: pre-wrap; }
+      .send { margin: 0.8rem 0; display: flex; gap: 0.5rem; }
+      .send input { flex: 1; }
+      .meta { font: 12px/1.4 ui-monospace, monospace; opacity: 0.85; }
+    </style>
+  </head>
+  <body>
+    <h1>meshtasticd — driven by the official @meshtastic/core SDK</h1>
+    <p class="sub">The full node runs in this tab over WebUSB; the official SDK talks to it through an in-process transport — no network.</p>
+
+    <div>
+      <button id="boot">Connect &amp; boot node</button>
+      <label class="meta">Adapter <select id="adapter"></select></label>
+      <span class="meta">my node: <b id="myNode">—</b> · nodes: <b id="nodeCount">0</b></span>
+    </div>
+
+    <div id="status">idle</div>
+
+    <div class="send">
+      <input id="msg" placeholder="Type a text message to broadcast…" disabled />
+      <button id="send" disabled>Send</button>
+    </div>
+
+    <div class="cols">
+      <div class="panel">
+        <h2>Mesh nodes (from the SDK)</h2>
+        <ul id="nodes"></ul>
+      </div>
+      <div class="panel">
+        <h2>SDK events / messages</h2>
+        <div id="log"></div>
+      </div>
+    </div>
+
+    <p class="meta" style="margin-top:1rem; opacity:0.7">
+      Chromium over <code>http://localhost</code>. Build first: <code>./wasm/build_node.sh</code> and the SDK bundle.
+      Same MeshToad CH341 adapter. Firmware stdout goes to the devtools console.
+    </p>
+
+    <script type="module" src="./meshnode-api.js"></script>
+  </body>
+</html>

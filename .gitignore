@@ -1,0 +1,10 @@
+# Emscripten SDK (installed via tools/setup-emsdk.sh — large, do not commit)
+/emsdk/
+
+# Build outputs
+/build/
+/web/dist/
+
+node_modules/
+*.log
+.DS_Store

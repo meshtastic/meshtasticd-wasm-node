@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Meshtastic Web Node — SX1262 over WebUSB (CH341)</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body { font: 14px/1.5 system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+      h1 { font-size: 1.25rem; }
+      .sub { opacity: 0.7; margin-top: -0.5rem; }
+      button { font: inherit; padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid #8888; cursor: pointer; }
+      #status { margin: 1rem 0; padding: 0.6rem 0.8rem; border-radius: 8px; background: #8881; }
+      #status.ok { background: #2ecc7133; }
+      #status.warn { background: #f39c1233; }
+      #status.err { background: #e74c3c33; }
+      #log { margin-top: 1rem; height: 320px; overflow: auto; background: #0001; border-radius: 8px;
+             padding: 0.6rem 0.8rem; font: 12px/1.45 ui-monospace, Menlo, monospace; white-space: pre-wrap; }
+      .note { font-size: 12px; opacity: 0.8; margin-top: 1rem; }
+    </style>
+  </head>
+  <body>
+    <h1>SX1262 liveness over WebUSB → CH341</h1>
+    <p class="sub">Checkpoint A (hardware half): proves the protocol + WebUSB reach a real LoRa radio, no WASM yet.</p>
+
+    <div>
+      <button id="connect">Connect &amp; probe radio</button>
+      <button id="diagnose">Diagnose (sweep CS polarity)</button>
+      <button id="disconnect">Disconnect</button>
+    </div>
+
+    <div id="status">idle</div>
+    <div id="log"></div>
+
+    <p class="note">
+      Requires Chromium (Chrome/Edge) over <code>http://localhost</code> or https. Plug in a CH341-based LoRa
+      adapter (Meshstick / MeshToad / Pine64 LoRa hat). On Linux the CH341 must not be claimed by a kernel
+      driver; on Windows it needs the WinUSB driver (Zadig). Default filter VID 0x1A86 / PID 0x5512.
+    </p>
+
+    <script type="module" src="./probe.js"></script>
+  </body>
+</html>

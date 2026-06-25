@@ -1,0 +1,22 @@
+{
+  "name": "meshtasticd-wasm-node",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Run the Meshtastic node (meshtasticd) as WebAssembly in a browser tab or headless Node, driving a real LoRa radio over WebUSB through a CH341 USB-to-SPI bridge.",
+  "scripts": {
+    "test": "node --test \"test/**/*.test.mjs\"",
+    "serve": "node ./tools/serve.mjs",
+    "build:wasm": "./wasm/build_node.sh",
+    "gen:adapters": "node ./tools/gen-adapters.mjs",
+    "run:node": "node ./tools/run-node.mjs"
+  },
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "@meshtastic/core": "^2.6.7",
+    "usb": "^3.0.0"
+  },
+  "devDependencies": {
+    "yaml": "^2.9.0"
+  }
+}
