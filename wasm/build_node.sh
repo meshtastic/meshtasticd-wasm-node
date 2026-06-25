@@ -2,7 +2,7 @@
 # Build the meshtasticd WASM node and stage it for the web app.
 #
 # The wasm C glue + WebUSB backend + the build itself now live in the firmware
-# repo as a first-class PlatformIO env: `pio run -e wasm` (board `wasm`, the
+# repo as a first-class PlatformIO env: `pio run -e native-wasm` (board `wasm`, the
 # meshtastic/platform-wasm platform, ARCH_PORTDUINO_WASM). This wrapper just runs
 # that build and copies the artifacts into web/dist/ for the dev server + pages.
 #
@@ -18,7 +18,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FW="${FW:-$(cd "$HERE/.." && pwd)/firmware}"
 [ -f "$FW/platformio.ini" ] || {
   echo "Firmware checkout not found at $FW (no platformio.ini)."
-  echo "Set FW=/path/to/meshtastic-firmware (a checkout with the [env:wasm] target)."
+  echo "Set FW=/path/to/meshtastic-firmware (a checkout with the [env:native-wasm] target)."
   exit 1
 }
 
@@ -28,14 +28,14 @@ if ! command -v emcc >/dev/null 2>&1 && [ -f "$HERE/emsdk/emsdk_env.sh" ]; then
   source "$HERE/emsdk/emsdk_env.sh" >/dev/null 2>&1
 fi
 
-OUT="$FW/.pio/build/wasm"
+OUT="$FW/.pio/build/native-wasm"
 
 if [ "${1:-}" = "clean" ]; then
-  ( cd "$FW" && pio run -e wasm -t clean ) || exit $?
+  ( cd "$FW" && pio run -e native-wasm -t clean ) || exit $?
   exit 0
 fi
 
-( cd "$FW" && pio run -e wasm ) || exit $?
+( cd "$FW" && pio run -e native-wasm ) || exit $?
 
 [ -s "$OUT/meshnode.mjs" ] && [ -s "$OUT/meshnode.wasm" ] || {
   echo "Expected artifacts missing under $OUT"
