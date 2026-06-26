@@ -44,17 +44,17 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout site
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Resolve firmware ref
         id: fw
         run: echo "ref=${{ github.event.inputs.firmware_ref || env.FIRMWARE_REF }}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout firmware (${{ steps.fw.outputs.ref }})
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: meshtastic/firmware
           ref: ${{ steps.fw.outputs.ref }}
@@ -62,34 +62,36 @@ jobs:
           path: firmware
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Install site deps
         run: npm ci
 
-      - name: Setup Python + PlatformIO
-        uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v6
         with:
           python-version: "3.x"
-      - run: pip install -U platformio
+
+      - name: Install PlatformIO
+        run: pip install -U platformio
 
       # Cache PlatformIO's downloaded platform/framework/toolchain packages
       # (platform-wasm, framework-portduino, ...). Keyed on the firmware ref so a
       # ref bump re-resolves cleanly.
       - name: Cache PlatformIO packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.platformio
           key: pio-wasm-${{ steps.fw.outputs.ref }}
           restore-keys: pio-wasm-
 
       - name: Setup Emscripten SDK
-        uses: mymindstorm/setup-emsdk@v14
+        uses: emscripten-core/setup-emsdk@v16
         with:
-          version: latest
+          version: 6.0.1
           actions-cache-folder: emsdk-cache
 
       - name: Build wasm node (pio run -e native-wasm)
@@ -102,7 +104,7 @@ jobs:
         run: node tools/build-site.mjs
 
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: _site
 
@@ -115,4 +117,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
