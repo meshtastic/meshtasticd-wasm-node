@@ -61,14 +61,18 @@ jobs:
           submodules: recursive
           path: firmware
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install site deps
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Setup Python
         uses: actions/setup-python@v6
@@ -101,7 +105,7 @@ jobs:
       - name: Assemble static site
         env:
           FW: ${{ github.workspace }}/firmware
-        run: node tools/build-site.mjs
+        run: pnpm run build:site
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5

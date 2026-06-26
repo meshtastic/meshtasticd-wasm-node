@@ -1,0 +1,3 @@
+allowBuilds:
+  '@meshtastic/core': true
+  esbuild: true
