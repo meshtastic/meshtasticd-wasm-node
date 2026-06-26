@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@11.9.0",
   "description": "Run the Meshtastic node (meshtasticd) as WebAssembly in a browser tab or headless Node, driving a real LoRa radio over WebUSB through a CH341 USB-to-SPI bridge.",
   "scripts": {
     "test": "node --test \"test/**/*.test.mjs\"",
