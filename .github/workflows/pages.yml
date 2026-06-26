@@ -40,7 +40,7 @@ env:
   # Pinned firmware commit that carries [env:native-wasm]. Bump to update the
   # deployed node (point at develop/a tag once native-wasm lands there).
   # renovate: datasource=git-refs depName=firmware packageName=https://github.com/meshtastic/firmware
-  FIRMWARE_REF: f59464a61938b1f44824498e8bc56a6b859da4f4
+  FIRMWARE_REF: e14849a2b8e899a82bdfe4374418593d34cf8844
 
 jobs:
   build:

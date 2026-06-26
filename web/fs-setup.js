@@ -1,7 +1,8 @@
 // Mount the right Emscripten FS backend at /meshdata BEFORE wasm_setup(), so the
 // firmware's NodeDB.loadFromDisk() sees persisted /prefs on boot and saveToDisk()
 // writes survive. One wasm binary; the backend is chosen at runtime:
-//   - browser  => IDBFS (IndexedDB) with autoPersist + load-on-boot via syncfs(true)
+//   - browser  => IDBFS (IndexedDB); load-on-boot via syncfs(true), persist via the
+//                 explicit wasm_fs_sync (no autoPersist — see the mount below)
 //   - headless => NODEFS mapped to a real host dir (synchronous, survives restarts,
 //                 inspectable with `ls`)
 // portduino's VFS mountpoint stays /meshdata, so firmware path /prefs/config.proto
@@ -24,9 +25,13 @@ export async function mountPersistentFS(Module, opts = {}) {
     return { backend: "NODEFS", root };
   }
 
-  // Browser: IDBFS, auto-persisting on each file close, and load any previously
-  // persisted tree into memory before the firmware boots.
-  FS.mount(Module.IDBFS, { autoPersist: true }, "/meshdata");
+  // Browser: IDBFS, then load any previously persisted tree into memory before
+  // the firmware boots. We do NOT use autoPersist: it fires a syncfs on every
+  // file close, which races the explicit wasm_fs_sync (5s timer + post-save +
+  // beforeunload) and warns "2 FS.syncfs operations in flight". The explicit
+  // sync is the complete one (it also catches the SafeFile atomic rename that
+  // autoPersist misses), so it's the single source of persistence.
+  FS.mount(Module.IDBFS, {}, "/meshdata");
   await new Promise((resolve, reject) => FS.syncfs(true, (err) => (err ? reject(err) : resolve())));
   return { backend: "IDBFS" };
 }

@@ -25,6 +25,27 @@ let syncTimer = null;
 let apiNonce = 0;
 let apiScratch = 0;
 
+// Actions that enter wasm MUST run only BETWEEN loop ticks — never during the
+// Asyncify WebUSB suspend that wasm_loop_once() parks in. Calling a wasm_* entry
+// point directly from a DOM/timer handler can fire mid-suspend and either abort
+// Asyncify ("async operation already in flight") or silently corrupt PhoneAPI
+// state. So region changes and ToRadio go through this queue, which pump()
+// drains after each tick (the same discipline transport-wasm.js / run-node.mjs use).
+const pendingActions = [];
+function enqueue(fn) {
+  pendingActions.push(fn);
+}
+function drainPending() {
+  while (pendingActions.length) {
+    try {
+      pendingActions.shift()();
+    } catch (e) {
+      console.error(e);
+      log("action error: " + e.message);
+    }
+  }
+}
+
 // --- Minimal protobuf helpers for the dependency-free API proof. The real
 // client uses @meshtastic/js to encode/decode; here we hand-build the one
 // ToRadio we need (want_config_id) and read just the FIRST field tag of each
@@ -95,14 +116,23 @@ function setupRegionUi() {
   sel.addEventListener("change", () => {
     const code = regionToCode(sel.value);
     if (code == null) return;
-    const rc = Module.ccall("wasm_set_region", "number", ["number"], [code]);
-    if (rc === 0) {
-      log(`region -> ${sel.options[sel.selectedIndex].text} (radio retuned, persisted)`);
-      setStatus(`region set: ${sel.options[sel.selectedIndex].text}`, "ok");
-    } else {
-      log(`region ${sel.value} REJECTED by firmware validation`);
-      setStatus("region rejected (validation failed)", "err");
-    }
+    // Capture the selection now; apply between ticks (wasm_set_region retunes the
+    // radio = a WebUSB SPI op, which must not start mid-suspend).
+    const label = sel.options[sel.selectedIndex].text;
+    const value = sel.value;
+    enqueue(() => {
+      const rc = Module.ccall("wasm_set_region", "number", ["number"], [code]);
+      if (rc === 0) {
+        log(`region -> ${label} (radio retuned, persisted)`);
+        setStatus(`region set: ${label}`, "ok");
+      } else if (rc === -2) {
+        // Shouldn't happen — queued actions already run between ticks. Defensive.
+        log(`region ${value} skipped: node busy (mid-tick)`);
+      } else {
+        log(`region ${value} REJECTED by firmware validation`);
+        setStatus("region rejected (validation failed)", "err");
+      }
+    });
   });
 }
 
@@ -163,7 +193,10 @@ async function pump() {
   if (!running) return;
   try {
     const delay = await Module.ccall("wasm_loop_once", "number", [], [], { async: true });
-    drainApi(); // pull any FromRadio the client API queued — between ticks, not during
+    // Between ticks only (never during the Asyncify SPI suspend): run queued UI/API
+    // actions, then drain any FromRadio the client API produced.
+    drainPending();
+    drainApi();
     setTimeout(pump, Math.min(Math.max(delay || 5, 5), 100));
   } catch (e) {
     console.error(e);
@@ -192,4 +225,9 @@ $("stop").addEventListener("click", () => {
   setStatus("loop stopped (node still loaded)", "warn");
 });
 const apiBtn = $("apiConfig");
-if (apiBtn) apiBtn.addEventListener("click", () => Module ? apiRequestConfig() : log("boot the node first"));
+if (apiBtn)
+  apiBtn.addEventListener("click", () =>
+    // Enqueue: apiRequestConfig() calls wasm_api_to_radio, which must run between
+    // ticks (re-entering mid-suspend corrupts PhoneAPI state).
+    running ? enqueue(apiRequestConfig) : log("boot the node first")
+  );
