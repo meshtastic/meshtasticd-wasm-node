@@ -16,7 +16,7 @@
   "license": "GPL-3.0-or-later",
   "dependencies": {
     "@meshtastic/core": "^2.6.7",
-    "usb": "^3.0.0"
+    "usb": "^3.0.1"
   },
   "devDependencies": {
     "esbuild": "^0.28.1",
