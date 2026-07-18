@@ -40,7 +40,7 @@ export async function mountPersistentFS(Module, opts = {}) {
 // the MESH_REGION env override. Pass-through if a number is given.
 export const REGION_CODES = {
   UNSET: 0, US: 1, EU_433: 2, EU_868: 3, CN: 4, JP: 5, ANZ: 6, KR: 7, TW: 8, RU: 9,
-  IN: 10, NZ_865: 11, TH: 12, LORA_24: 13, UA_433: 14, UA_868: 15, MY_433: 16,
+  IN: 10, NZ_865: 11, TH: 12, LORA_24: 13, UA_433: 14, MY_433: 16,
   MY_919: 17, SG_923: 18, PH_433: 19, PH_868: 20, PH_915: 21, ANZ_433: 22,
   KZ_433: 23, KZ_863: 24, NP_865: 25, BR_902: 26,
 };
@@ -48,6 +48,9 @@ export const REGION_CODES = {
 export function regionToCode(r) {
   if (r == null || r === "") return null;
   const n = Number(r);
-  if (Number.isFinite(n)) return n;
+  if (Number.isFinite(n)) {
+    if (n === 15) return null; // UA_868 = 15 was removed
+    return n;
+  }
   return REGION_CODES[String(r).toUpperCase()] ?? null;
 }
