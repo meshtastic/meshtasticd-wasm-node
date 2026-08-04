@@ -62,7 +62,7 @@ jobs:
           path: firmware
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@v6.0.9
 
       - name: Setup Node
         uses: actions/setup-node@v6
