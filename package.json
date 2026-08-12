@@ -19,7 +19,7 @@
     "usb": "^3.0.0"
   },
   "devDependencies": {
-    "esbuild": "^0.28.1",
+    "esbuild": "^0.28.2",
     "yaml": "^2.9.0"
   }
 }
